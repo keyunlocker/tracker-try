@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shop Check-In System</title>
+    <style>
+        body { font-family: sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; display: flex; align-items: center; justify-content: center; min-height: 100vh; box-sizing: border-box; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 360px; }
+        h2 { text-align: center; margin-top: 0; color: #333; }
+        label { font-weight: bold; display: block; margin: 15px 0 5px; color: #555; }
+        input[type="text"] { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; background-color: #007bff; color: white; border: none; padding: 14px; font-size: 16px; font-weight: bold; border-radius: 6px; margin-top: 20px; cursor: pointer; }
+        button:disabled { background-color: #ccc; }
+        #status { text-align: center; font-weight: bold; margin-top: 15px; color: #666; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Shop Check-In</h2>
+    <form id="checkinForm">
+        <label>Your Name</label>
+        <input type="text" id="salesman_name" name="salesman_name" placeholder="Enter your name" required>
+
+        <label>Shop Name / ID</label>
+        <input type="text" id="shop_name" name="shop_name" placeholder="Enter shop name" required>
+        
+        <input type="hidden" id="latitude" name="latitude">
+        <input type="hidden" id="longitude" name="longitude">
+        
+        <button type="submit" id="submitBtn" disabled>Waiting for GPS...</button>
+    </form>
+    <div id="status">Acquiring GPS location...</div>
+</div>
+
+<script>
+    // ⚠️ REPLACE THE URL BELOW WITH THE GOOGLE WEB APP URL YOU COPIED IN STEP 1:
+    const WEB_APP_URL = "PASTE_YOUR_WEB_APP_URL_HERE";
+
+    const statusDiv = document.getElementById("status");
+    const submitBtn = document.getElementById("submitBtn");
+
+    window.onload = function() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    document.getElementById("latitude").value = position.coords.latitude;
+                    document.getElementById("longitude").value = position.coords.longitude;
+                    statusDiv.innerText = "GPS Connected ✅";
+                    statusDiv.style.color = "green";
+                    submitBtn.innerText = "Submit Check-In";
+                    submitBtn.disabled = false;
+                },
+                (error) => {
+                    statusDiv.innerText = "GPS Error: Please enable location settings and refresh.";
+                    statusDiv.style.color = "red";
+                },
+                { enableHighAccuracy: true, timeout: 10000 }
+            );
+        } else {
+            statusDiv.innerText = "GPS not supported on this device.";
+        }
+    };
+
+    document.getElementById("checkinForm").addEventListener("submit", function(e) {
+        e.preventDefault();
+        submitBtn.disabled = true;
+        statusDiv.innerText = "Saving to master sheet...";
+
+        const formData = new FormData(this);
+        fetch(WEB_APP_URL, {
+            method: "POST",
+            body: new URLSearchParams(formData),
+            headers: { "Content-Type": "application/x-www-form-urlencoded" }
+        })
+        .then(res => res.text())
+        .then(text => {
+            alert(text);
+            document.getElementById("shop_name").value = "";
+            submitBtn.disabled = false;
+            statusDiv.innerText = "Ready for next check-in ✅";
+        })
+        .catch(() => {
+            alert("Submission failed. Check network connection.");
+            submitBtn.disabled = false;
+        });
+    });
+</script>
+
+</body>
+</html>
